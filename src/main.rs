@@ -1,8 +1,10 @@
-use dioxus::prelude::*;
+use std::str::FromStr;
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-const HEADER_SVG: Asset = asset!("/assets/header.svg");
+use dioxus::{
+    html::mo::{self, movablelimits},
+    prelude::*,
+};
+use hot_dog::Shape;
 
 fn main() {
     dioxus::launch(App);
@@ -10,28 +12,49 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let shape = Shape::from_str(".#...\n.###.\n").unwrap();
     rsx! {
-        document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
-        Hero {}
-
+        Lattice { shape, cell_pixel: 100 }
+        Counter {}
     }
 }
 
 #[component]
-pub fn Hero() -> Element {
+fn Counter() -> Element {
+    let mut count = use_signal(|| 0);
+    rsx! {
+        div { "Counter: {count}" }
+        button { onclick: move |_| count += 1, "Increase" }
+    }
+}
+
+#[component]
+fn Lattice(shape: Shape, cell_pixel: usize) -> Element {
+    let shape = use_signal(|| shape.clone());
+    let style = format!(
+        "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
+        shape().width(),
+        cell_pixel,
+        shape().height(),
+        cell_pixel
+    );
+    rsx! {
+        div { class: "lattice", style,
+            for (_ , _ , is_wall) in shape().coordinates() {
+                LatticeCell { is_wall }
+            }
+        }
+    }
+}
+
+#[component]
+fn LatticeCell(is_wall: bool) -> Element {
     rsx! {
         div {
-            id: "hero",
-            img { src: HEADER_SVG, id: "header" }
-            div { id: "links",
-                a { href: "https://dioxuslabs.com/learn/0.6/", "📚 Learn Dioxus" }
-                a { href: "https://dioxuslabs.com/awesome", "🚀 Awesome Dioxus" }
-                a { href: "https://github.com/dioxus-community/", "📡 Community Libraries" }
-                a { href: "https://github.com/DioxusLabs/sdk", "⚙️ Dioxus Development Kit" }
-                a { href: "https://marketplace.visualstudio.com/items?itemName=DioxusLabs.dioxus", "💫 VSCode Extension" }
-                a { href: "https://discord.gg/XgGxMSkvUM", "👋 Community Discord" }
-            }
+            class: "lattice-cell",
+            border: "1px solid #000",
+            padding: "10px",
+            background_color: if is_wall { "gray" } else { "white" },
         }
     }
 }
