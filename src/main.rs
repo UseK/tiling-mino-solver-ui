@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use dioxus::{logger::tracing, prelude::*};
-use hot_dog::Shape;
+use hot_dog::{Mino, Shape};
 
 fn main() {
     dioxus::launch(App);
@@ -11,23 +11,71 @@ fn main() {
 fn App() -> Element {
     let shape = Shape::from_str(".#...\n.###.\n").unwrap();
     tracing::info!("Starting the application");
+    let mut minos = use_signal(Vec::new);
+    let handle_mino_maker = move |new_shape: Shape| {
+        tracing::info!("Button pushed with event: {:?}", new_shape);
+        let new_mino = Mino::new('a', new_shape.clone());
+        minos.write().push(new_mino);
+    };
     rsx! {
         Lattice { shape, cell_pixel: 100 }
-        Counter {}
+        MinoMaker { minos: minos(), handle_push_button: handle_mino_maker }
     }
 }
 
 #[component]
-fn Counter() -> Element {
-    let mut count = use_signal(|| 0);
+fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Element {
+    tracing::info!("Rendering MinoMaker component");
+    let mut new_shape = use_signal(|| Shape::from_str(".#.\n.##\n").unwrap());
+    let handle_click_with_toggle = move |(x, y)| {
+        tracing::info!("Clicked on cell ({}, {})", x, y);
+        new_shape.write().toggle(x, y);
+    };
     rsx! {
-        div { "Counter: {count}" }
-        button { onclick: move |_| count += 1, "Increase" }
+        LatticeMut {
+            shape: new_shape(),
+            cell_pixel: 50,
+            handle_click: handle_click_with_toggle,
+        }
+        button { onclick: move |_| handle_push_button.call(new_shape()), "Make Mino" }
+        for mino in minos {
+            div { "new" }
+            Lattice { shape: mino.shape.clone(), cell_pixel: 50 }
+        }
+    }
+}
+
+#[component]
+fn LatticeMut(
+    shape: Shape,
+    cell_pixel: usize,
+    handle_click: EventHandler<(usize, usize)>,
+) -> Element {
+    tracing::debug!("Rendering mutable lattice with shape: {:?}", shape);
+    let style = format!(
+        "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
+        shape.width(),
+        cell_pixel,
+        shape.height(),
+        cell_pixel
+    );
+    rsx! {
+        div { class: "lattice", style: style.clone(),
+            for (x , y , is_wall) in shape.coordinates() {
+                LatticeCell {
+                    onclick: move |_| {
+                        handle_click.call((x, y));
+                    },
+                    is_wall,
+                }
+            }
+        }
     }
 }
 
 #[component]
 fn Lattice(shape: Shape, cell_pixel: usize) -> Element {
+    tracing::debug!("Rendering lattice with shape: {:?}", shape);
     let mut shape = use_signal(|| shape.clone());
     let style = format!(
         "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
@@ -37,7 +85,7 @@ fn Lattice(shape: Shape, cell_pixel: usize) -> Element {
         cell_pixel
     );
     rsx! {
-        div { class: "lattice", style,
+        div { class: "lattice", style: style.clone(),
             for (x , y , is_wall) in shape().coordinates() {
                 LatticeCell {
                     onclick: move |_| {
@@ -51,8 +99,8 @@ fn Lattice(shape: Shape, cell_pixel: usize) -> Element {
     }
 }
 
+#[allow(non_snake_case)]
 fn LatticeCell(props: CellProps) -> Element {
-    tracing::debug!("Rendering cell with is_wall: {}", props.is_wall);
     rsx! {
         div {
             class: "lattice-cell",
