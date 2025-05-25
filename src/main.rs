@@ -1,9 +1,6 @@
-use std::{cell::Cell, str::FromStr};
+use std::str::FromStr;
 
-use dioxus::{
-    html::mo::{self, movablelimits},
-    prelude::*,
-};
+use dioxus::prelude::*;
 use hot_dog::Shape;
 
 fn main() {
@@ -81,5 +78,29 @@ fn FancyButton(props: FancyButtonProps) -> Element {
             onclick: move |evt| props.onclick.call(evt),
             "click me pls."
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::prelude::*;
+    #[test]
+    fn test() {
+        assert_rsx_eq(
+            rsx! {
+                div { "Hello world" }
+                div { "Hello world" }
+            },
+            rsx! {
+                for _ in 0..2 {
+                    div { "Hello world" }
+                }
+            },
+        )
+    }
+    fn assert_rsx_eq(first: Element, second: Element) {
+        let first = dioxus_ssr::render_element(first);
+        let second = dioxus_ssr::render_element(second);
+        pretty_assertions::assert_eq!(first, second);
     }
 }

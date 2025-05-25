@@ -26,3 +26,7 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+dioxus-ssr = "0.6.2"
