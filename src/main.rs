@@ -9,7 +9,6 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let shape = Shape::from_str(".#...\n.###.\n").unwrap();
     tracing::info!("Starting the application");
     let mut minos = use_signal(Vec::new);
     let handle_mino_maker = move |new_shape: Shape| {
@@ -18,7 +17,6 @@ fn App() -> Element {
         minos.write().push(new_mino);
     };
     rsx! {
-        Lattice { shape, cell_pixel: 100 }
         MinoMaker { minos: minos(), handle_push_button: handle_mino_maker }
     }
 }
@@ -32,25 +30,21 @@ fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Eleme
         new_shape.write().toggle(x, y);
     };
     rsx! {
-        LatticeMut {
+        Lattice {
             shape: new_shape(),
-            cell_pixel: 50,
+            cell_pixel: 100,
             handle_click: handle_click_with_toggle,
         }
         button { onclick: move |_| handle_push_button.call(new_shape()), "Make Mino" }
         for mino in minos {
             div { "new" }
-            Lattice { shape: mino.shape.clone(), cell_pixel: 50 }
+            Lattice { shape: mino.shape, cell_pixel: 50, handle_click: |_| {} }
         }
     }
 }
 
 #[component]
-fn LatticeMut(
-    shape: Shape,
-    cell_pixel: usize,
-    handle_click: EventHandler<(usize, usize)>,
-) -> Element {
+fn Lattice(shape: Shape, cell_pixel: usize, handle_click: EventHandler<(usize, usize)>) -> Element {
     tracing::debug!("Rendering mutable lattice with shape: {:?}", shape);
     let style = format!(
         "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
@@ -63,10 +57,10 @@ fn LatticeMut(
         div { class: "lattice", style: style.clone(),
             for (x , y , is_wall) in shape.coordinates() {
                 LatticeCell {
-                    onclick: move |_| {
+                    is_wall,
+                    handle_click: move |_| {
                         handle_click.call((x, y));
                     },
-                    is_wall,
                 }
             }
         }
@@ -74,48 +68,16 @@ fn LatticeMut(
 }
 
 #[component]
-fn Lattice(shape: Shape, cell_pixel: usize) -> Element {
-    tracing::debug!("Rendering lattice with shape: {:?}", shape);
-    let mut shape = use_signal(|| shape.clone());
-    let style = format!(
-        "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
-        shape().width(),
-        cell_pixel,
-        shape().height(),
-        cell_pixel
-    );
-    rsx! {
-        div { class: "lattice", style: style.clone(),
-            for (x , y , is_wall) in shape().coordinates() {
-                LatticeCell {
-                    onclick: move |_| {
-                        tracing::info!("Clicked on cell ({}, {}, {})", x, y, is_wall);
-                        shape.write().toggle(x, y);
-                    },
-                    is_wall,
-                }
-            }
-        }
-    }
-}
-
-#[allow(non_snake_case)]
-fn LatticeCell(props: CellProps) -> Element {
+fn LatticeCell(is_wall: bool, handle_click: EventHandler<MouseEvent>) -> Element {
     rsx! {
         div {
             class: "lattice-cell",
             border: "1px solid #000",
             padding: "10px",
-            background_color: if props.is_wall { "gray" } else { "white" },
-            onclick: move |evt| props.onclick.call(evt),
+            background_color: if is_wall { "gray" } else { "white" },
+            onclick: move |evt| handle_click.call(evt),
         }
     }
-}
-
-#[derive(PartialEq, Clone, Props)]
-struct CellProps {
-    onclick: EventHandler<MouseEvent>,
-    is_wall: bool,
 }
 
 #[cfg(test)]
