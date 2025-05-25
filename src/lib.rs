@@ -30,6 +30,9 @@ impl Shape {
     pub fn put_on(&mut self, x: usize, y: usize, b: bool) {
         self.0[y][x] |= b;
     }
+    pub fn toggle(&mut self, x: usize, y: usize) {
+        self.0[y][x] = !self.0[y][x];
+    }
     pub fn coordinates(&self) -> Vec<(usize, usize, bool)> {
         let mut vs = vec![];
         for y in 0..self.height() {
