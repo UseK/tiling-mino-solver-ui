@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use dioxus::{logger::tracing, prelude::*};
-use hot_dog::{Mino, Shape};
+use tiling_mino_solver::{Mino, Shape};
 
 fn main() {
     dioxus::launch(App);

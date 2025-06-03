@@ -4236,8 +4236,8 @@ dependencies = [
 
 [[package]]
 name = "tiling-mino-solver"
-version = "0.2.1"
-source = "git+https://github.com/UseK/tiling-mino-solver.git#38db8e1fbd06992dc5387a4c4102ec7619a49486"
+version = "0.2.3"
+source = "git+https://github.com/UseK/tiling-mino-solver.git#b1a56720a98f8e9f7e1e052180ff489fc0e33f46"
 dependencies = [
  "ansi_term",
  "rayon",
