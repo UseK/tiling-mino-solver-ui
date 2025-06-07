@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use dioxus::{logger::tracing, prelude::*};
-use tiling_mino_solver::{Mino, Shape};
+use tiling_mino_solver::{Board, Mino, Shape};
 
 fn main() {
     dioxus::launch(App);
@@ -11,6 +11,7 @@ fn main() {
 fn App() -> Element {
     tracing::info!("Starting the application");
     let mut minos = use_signal(Vec::new);
+    let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
     let handle_mino_maker = move |new_shape: Shape| {
         tracing::info!("Button pushed with event: {:?}", new_shape);
         let new_mino = Mino::new('a', new_shape.clone());
@@ -18,12 +19,29 @@ fn App() -> Element {
     };
     rsx! {
         MinoMaker { minos: minos(), handle_push_button: handle_mino_maker }
+        BoardMaker {
+            board: board(),
+            handle_click: move |(x, y)| {
+                tracing::info!("Clicked on board cell ({}, {})", x, y);
+                board.write().shape.toggle(x, y);
+            },
+        }
+    }
+}
+
+#[component]
+fn BoardMaker(board: Board, handle_click: EventHandler<(usize, usize)>) -> Element {
+    tracing::info!("Rendering BoardMaker component");
+    rsx! {
+        div { "Board Maker" }
+        Lattice { shape: board.shape, cell_pixel: 20, handle_click }
     }
 }
 
 #[component]
 fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Element {
     tracing::info!("Rendering MinoMaker component");
+    println!("This is println macro");
     let mut new_shape = use_signal(|| Shape::from_str(".#.\n.##\n").unwrap());
     let handle_click_with_toggle = move |(x, y)| {
         tracing::info!("Clicked on cell ({}, {})", x, y);
