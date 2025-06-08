@@ -61,6 +61,25 @@ fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Eleme
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Color {
+    Blue = 0x0000FF,
+    Cyan = 0x00FFFF,
+    Green = 0x00FF00,
+    Gray = 0x808080,
+    Purple = 0x800080,
+    Red = 0xFF0000,
+    Yellow = 0xFFFF00,
+    White = 0xFFFFFF,
+    Black = 0x000000,
+}
+
+impl Color {
+    fn to_string(&self) -> String {
+        format!("#{:06X}", *self as usize)
+    }
+}
+
 #[component]
 fn Lattice(shape: Shape, cell_pixel: usize, handle_click: EventHandler<(usize, usize)>) -> Element {
     tracing::debug!("Rendering mutable lattice with shape: {:?}", shape);
@@ -75,10 +94,10 @@ fn Lattice(shape: Shape, cell_pixel: usize, handle_click: EventHandler<(usize, u
         div { class: "lattice", style: style.clone(),
             for (x , y , is_wall) in shape.coordinates() {
                 LatticeCell {
-                    is_wall,
                     handle_click: move |_| {
                         handle_click.call((x, y));
                     },
+                    color: if is_wall { Color::Gray.to_string() } else { Color::White.to_string() },
                 }
             }
         }
@@ -86,13 +105,14 @@ fn Lattice(shape: Shape, cell_pixel: usize, handle_click: EventHandler<(usize, u
 }
 
 #[component]
-fn LatticeCell(is_wall: bool, handle_click: EventHandler<MouseEvent>) -> Element {
+fn LatticeCell(color: String, handle_click: EventHandler<MouseEvent>) -> Element {
+    tracing::debug!("Color enum values: {:?}", color);
     rsx! {
         div {
             class: "lattice-cell",
             border: "1px solid #000",
             padding: "10px",
-            background_color: if is_wall { "gray" } else { "white" },
+            background_color: color,
             onclick: move |evt| handle_click.call(evt),
         }
     }
