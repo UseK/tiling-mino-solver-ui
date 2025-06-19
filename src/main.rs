@@ -29,7 +29,12 @@ fn App() -> Element {
         button {
             onclick: move |_| {
                 tracing::info!("Solve button clicked");
-                board.write().tile_parallel(&minos());
+                let solved: Option<Board> = board().tile_parallel(&minos());
+                if let Some(s) = solved {
+                    *board.write() = s;
+                } else {
+                    tracing::info!("No solution found");
+                }
             },
             "Solve"
         }
