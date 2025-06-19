@@ -12,19 +12,26 @@ fn App() -> Element {
     tracing::info!("Starting the application");
     let mut minos = use_signal(Vec::new);
     let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
-    let handle_mino_maker = move |new_shape: Shape| {
+    let push_mino = move |new_shape: Shape| {
         tracing::info!("Button pushed with event: {:?}", new_shape);
         let new_mino = Mino::new('a', new_shape.clone());
         minos.write().push(new_mino);
     };
     rsx! {
-        MinoMaker { minos: minos(), handle_push_button: handle_mino_maker }
+        MinoMaker { minos: minos(), handle_push_button: push_mino }
         BoardMaker {
             board: board(),
             handle_click: move |(x, y)| {
                 tracing::info!("Clicked on board cell ({}, {})", x, y);
                 board.write().shape.toggle(x, y);
             },
+        }
+        button {
+            onclick: move |_| {
+                tracing::info!("Solve button clicked");
+                board.write().tile_parallel(&minos());
+            },
+            "Solve"
         }
     }
 }
@@ -34,7 +41,7 @@ fn BoardMaker(board: Board, handle_click: EventHandler<(usize, usize)>) -> Eleme
     tracing::info!("Rendering BoardMaker component");
     rsx! {
         div { "Board Maker" }
-        Lattice { shape: board.shape, cell_pixel: 20, handle_click }
+        Lattice { color_shape: board.into(), cell_pixel: 20, handle_click }
     }
 }
 
@@ -49,14 +56,18 @@ fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Eleme
     };
     rsx! {
         Lattice {
-            shape: new_shape(),
+            color_shape: new_shape().into(),
             cell_pixel: 100,
             handle_click: handle_click_with_toggle,
         }
         button { onclick: move |_| handle_push_button.call(new_shape()), "Make Mino" }
         for mino in minos {
             div { "new" }
-            Lattice { shape: mino.shape, cell_pixel: 50, handle_click: |_| {} }
+            Lattice {
+                color_shape: mino.shape.into(),
+                cell_pixel: 50,
+                handle_click: |_| {},
+            }
         }
     }
 }
@@ -80,24 +91,66 @@ impl Color {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ColorShape(Vec<Vec<Color>>);
+
+impl Into<ColorShape> for Shape {
+    fn into(self) -> ColorShape {
+        let mut color_shape = vec![vec![Color::White; self.width()]; self.height()];
+        for (x, y, is_wall) in self.coordinates() {
+            if is_wall {
+                color_shape[y][x] = Color::Gray;
+            }
+        }
+        ColorShape(color_shape)
+    }
+}
+
+impl Into<ColorShape> for Board {
+    fn into(self) -> ColorShape {
+        self.shape.into()
+    }
+}
+
+impl ColorShape {
+    fn coordinates(&self) -> impl Iterator<Item = (usize, usize, Color)> + '_ {
+        self.0
+            .iter()
+            .enumerate()
+            .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, &color)| (x, y, color)))
+    }
+
+    fn width(&self) -> usize {
+        self.0.first().map_or(0, |row| row.len())
+    }
+
+    fn height(&self) -> usize {
+        self.0.len()
+    }
+}
+
 #[component]
-fn Lattice(shape: Shape, cell_pixel: usize, handle_click: EventHandler<(usize, usize)>) -> Element {
-    tracing::debug!("Rendering mutable lattice with shape: {:?}", shape);
+fn Lattice(
+    color_shape: ColorShape,
+    cell_pixel: usize,
+    handle_click: EventHandler<(usize, usize)>,
+) -> Element {
+    tracing::trace!("Rendering mutable lattice with shape: {:?}", color_shape);
     let style = format!(
         "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
-        shape.width(),
+        color_shape.width(),
         cell_pixel,
-        shape.height(),
+        color_shape.height(),
         cell_pixel
     );
     rsx! {
         div { class: "lattice", style: style.clone(),
-            for (x , y , is_wall) in shape.coordinates() {
+            for (x , y , color) in color_shape.coordinates() {
                 LatticeCell {
                     handle_click: move |_| {
                         handle_click.call((x, y));
                     },
-                    color: if is_wall { Color::Gray.to_string() } else { Color::White.to_string() },
+                    color: color.to_string(),
                 }
             }
         }
@@ -106,7 +159,7 @@ fn Lattice(shape: Shape, cell_pixel: usize, handle_click: EventHandler<(usize, u
 
 #[component]
 fn LatticeCell(color: String, handle_click: EventHandler<MouseEvent>) -> Element {
-    tracing::debug!("Color enum values: {:?}", color);
+    tracing::trace!("Color enum values: {:?}", color);
     rsx! {
         div {
             class: "lattice-cell",
