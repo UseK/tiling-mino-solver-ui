@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 dioxus = { version = "0.6.3", features = [] }
-tiling-mino-solver = { git = "https://github.com/UseK/tiling-mino-solver.git" }
+tiling-mino-solver = { git = "https://github.com/UseK/tiling-mino-solver.git", version = "0.2.4"}
 
 [features]
 default = ["web"]

@@ -13,8 +13,10 @@ fn App() -> Element {
     let mut minos = use_signal(Vec::new);
     let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
     let push_mino = move |new_shape: Shape| {
+        let current_len = minos().len();
+        tracing::info!("Current number of minos: {}", current_len);
         tracing::info!("Button pushed with event: {:?}", new_shape);
-        let new_mino = Mino::new('a', new_shape.clone());
+        let new_mino = Mino::new(CHAR_PALETTE[current_len], new_shape.clone());
         minos.write().push(new_mino);
     };
     rsx! {
@@ -69,7 +71,7 @@ fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Eleme
         for mino in minos {
             div { "new" }
             Lattice {
-                color_shape: mino.shape.into(),
+                color_shape: mino.into(),
                 cell_pixel: 50,
                 handle_click: |_| {},
             }
@@ -82,27 +84,42 @@ enum Color {
     Blue = 0x0000FF,
     Cyan = 0x00FFFF,
     Green = 0x00FF00,
-    Gray = 0x808080,
     Purple = 0x800080,
     Red = 0xFF0000,
     Yellow = 0xFFFF00,
+
     White = 0xFFFFFF,
     Black = 0x000000,
+    Gray = 0x808080,
 }
 
+const CHAR_PALETTE: [char; 6] = ['a', 'b', 'c', 'd', 'e', 'f'];
+
 impl Color {
-    fn to_string(&self) -> String {
+    fn style_color(&self) -> String {
         format!("#{:06X}", *self as usize)
+    }
+
+    fn from_char(c: char) -> Self {
+        match c {
+            'a' => Color::Blue,
+            'b' => Color::Cyan,
+            'c' => Color::Green,
+            'd' => Color::Red,
+            'e' => Color::Purple,
+            'f' => Color::Yellow,
+            _ => Color::Gray, // Default to gray for unknown characters
+        }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ColorShape(Vec<Vec<Color>>);
 
-impl Into<ColorShape> for Shape {
-    fn into(self) -> ColorShape {
-        let mut color_shape = vec![vec![Color::White; self.width()]; self.height()];
-        for (x, y, is_wall) in self.coordinates() {
+impl From<Shape> for ColorShape {
+    fn from(val: Shape) -> Self {
+        let mut color_shape = vec![vec![Color::White; val.width()]; val.height()];
+        for (x, y, is_wall) in val.coordinates() {
             if is_wall {
                 color_shape[y][x] = Color::Gray;
             }
@@ -111,9 +128,35 @@ impl Into<ColorShape> for Shape {
     }
 }
 
-impl Into<ColorShape> for Board {
-    fn into(self) -> ColorShape {
-        self.shape.into()
+impl From<Board> for ColorShape {
+    fn from(board: Board) -> Self {
+        let colors = board
+            .cell_state_matrix()
+            .into_iter()
+            .map(|row| {
+                row.into_iter()
+                    .map(|cell| match cell {
+                        tiling_mino_solver::CellState::Occupied(c) => Color::from_char(c),
+                        tiling_mino_solver::CellState::Wall => Color::Gray,
+                        tiling_mino_solver::CellState::Vacant => Color::White,
+                    })
+                    .collect()
+            })
+            .collect();
+        ColorShape(colors)
+    }
+}
+
+impl From<Mino> for ColorShape {
+    fn from(mino: Mino) -> Self {
+        let mut color_shape = vec![vec![Color::White; mino.shape.width()]; mino.shape.height()];
+        for (x, y, is_wall) in mino.shape.coordinates() {
+            if is_wall {
+                tracing::info!("Setting color for cell ({}, {}) to {}", x, y, mino.name);
+                color_shape[y][x] = Color::from_char(mino.name);
+            }
+        }
+        ColorShape(color_shape)
     }
 }
 
@@ -155,7 +198,7 @@ fn Lattice(
                     handle_click: move |_| {
                         handle_click.call((x, y));
                     },
-                    color: color.to_string(),
+                    color: color.style_color(),
                 }
             }
         }
