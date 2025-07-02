@@ -20,6 +20,11 @@ fn App() -> Element {
         minos.write().push(new_mino);
     };
     rsx! {
+        // The Stylesheet component inserts a style link into the head of the document
+        document::Stylesheet {
+            // Urls are relative to your Cargo.toml file
+            href: asset!("/assets/tailwind.css"),
+        }
         MinoMaker { minos: minos(), handle_push_button: push_mino }
         BoardMaker {
             board: board(),
