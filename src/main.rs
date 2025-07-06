@@ -10,39 +10,48 @@ fn main() {
 #[component]
 fn App() -> Element {
     tracing::info!("Starting the application");
-    let mut minos = use_signal(Vec::new);
-    let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
-    let push_mino = move |new_shape: Shape| {
-        let current_len = minos().len();
-        tracing::info!("Current number of minos: {}", current_len);
-        tracing::info!("Button pushed with event: {:?}", new_shape);
-        let new_mino = Mino::new(CHAR_PALETTE[current_len], new_shape.clone());
-        minos.write().push(new_mino);
-    };
     rsx! {
         // The Stylesheet component inserts a style link into the head of the document
         document::Stylesheet {
             // Urls are relative to your Cargo.toml file
             href: asset!("/assets/tailwind.css"),
         }
-        MinoMaker { minos: minos(), handle_push_button: push_mino }
-        BoardMaker {
-            board: board(),
-            handle_click: move |(x, y)| {
-                tracing::info!("Clicked on board cell ({}, {})", x, y);
-                board.write().shape.toggle(x, y);
-            },
+        div {
+            class: "p-5",
+            TailingMinoSolver { }
         }
+    }
+}
+
+#[component]
+fn TailingMinoSolver() -> Element {
+    let mut minos = use_signal(Vec::new);
+    let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
+    let make_mino = move |new_shape: Shape| {
+        let current_len = minos().len();
+        tracing::info!("Current number of minos: {}", current_len);
+        tracing::info!("Button pushed with event: {:?}", new_shape);
+        let new_mino = Mino::new(CHAR_PALETTE[current_len], new_shape.clone());
+        minos.write().push(new_mino);
+    };
+    let toggle_board_cell = move |(x, y)| {
+        tracing::info!("Clicked on board cell ({}, {})", x, y);
+        board.write().shape.toggle(x, y);
+    };
+    let tile_minos = move |_| {
+        tracing::info!("Solve button clicked");
+        let solved: Option<Board> = board().tile_parallel(&minos());
+        if let Some(s) = solved {
+            *board.write() = s;
+        } else {
+            tracing::info!("No solution found");
+        }
+    };
+    rsx! {
+        MinoMaker { minos: minos(), handle_push_button: make_mino }
+        BoardMaker { board: board(), handle_click: toggle_board_cell }
         button {
-            onclick: move |_| {
-                tracing::info!("Solve button clicked");
-                let solved: Option<Board> = board().tile_parallel(&minos());
-                if let Some(s) = solved {
-                    *board.write() = s;
-                } else {
-                    tracing::info!("No solution found");
-                }
-            },
+            onclick: tile_minos,
             "Solve"
         }
     }
@@ -101,6 +110,19 @@ enum Color {
 const CHAR_PALETTE: [char; 6] = ['a', 'b', 'c', 'd', 'e', 'f'];
 
 impl Color {
+    fn tailwind_bg(&self) -> &'static str {
+        match self {
+            Color::Blue => "bg-blue-500",
+            Color::Cyan => "bg-cyan-500",
+            Color::Green => "bg-green-500",
+            Color::Purple => "bg-purple-500",
+            Color::Red => "bg-red-500",
+            Color::Yellow => "bg-yellow-500",
+            Color::White => "bg-white",
+            Color::Black => "bg-black",
+            Color::Gray => "bg-gray-500",
+        }
+    }
     fn style_color(&self) -> String {
         format!("#{:06X}", *self as usize)
     }
@@ -190,7 +212,7 @@ fn Lattice(
 ) -> Element {
     tracing::trace!("Rendering mutable lattice with shape: {:?}", color_shape);
     let style = format!(
-        "display: grid; grid-template-columns: repeat({}, {}px); grid-template-rows: repeat({}, {}px);",
+        "display: grid; grid-template-columns:repeat({}, {}px); grid-template-rows:repeat({}, {}px);",
         color_shape.width(),
         cell_pixel,
         color_shape.height(),
@@ -203,7 +225,7 @@ fn Lattice(
                     handle_click: move |_| {
                         handle_click.call((x, y));
                     },
-                    color: color.style_color(),
+                    color: color.tailwind_bg(),
                 }
             }
         }
@@ -215,10 +237,7 @@ fn LatticeCell(color: String, handle_click: EventHandler<MouseEvent>) -> Element
     tracing::trace!("Color enum values: {:?}", color);
     rsx! {
         div {
-            class: "lattice-cell",
-            border: "1px solid #000",
-            padding: "10px",
-            background_color: color,
+            class: "{color} border",
             onclick: move |evt| handle_click.call(evt),
         }
     }
