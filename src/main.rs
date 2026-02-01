@@ -267,7 +267,6 @@ fn LatticeCell(color: String, handle_click: EventHandler<MouseEvent>) -> Element
 
 #[cfg(test)]
 mod tests {
-
     use dioxus::prelude::*;
     #[test]
     fn test() {
