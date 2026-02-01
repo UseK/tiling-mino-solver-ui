@@ -30,4 +30,4 @@ inherits = "dev"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
-dioxus-ssr = "0.6.2"
+dioxus-ssr = "0.7.3"
