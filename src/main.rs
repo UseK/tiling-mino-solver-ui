@@ -41,11 +41,12 @@ fn TailingMinoSolver() -> Element {
     let mut minos = use_signal(Vec::new);
     let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
     let mut solved_board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
-    let make_mino = move |new_shape: Shape| {
+    let make_mino = move |mut new_shape: Shape| {
         let current_len = minos().len();
         tracing::info!("Current number of minos: {}", current_len);
         tracing::info!("Button pushed with event: {:?}", new_shape);
-        let new_mino = Mino::new(CHAR_PALETTE[current_len], new_shape.clone());
+        new_shape.trim();
+        let new_mino = Mino::new(CHAR_PALETTE[current_len], new_shape);
         minos.write().push(new_mino);
     };
     let toggle_board_cell = move |(x, y)| {
