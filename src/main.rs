@@ -17,8 +17,21 @@ fn App() -> Element {
             href: asset!("/assets/tailwind.css"),
         }
         div {
-            class: "p-5",
+            class: "p-5 bg-sky-700",
+            FlexBoxTest {  }
             TailingMinoSolver { }
+        }
+    }
+}
+
+#[component]
+fn FlexBoxTest() -> Element {
+    rsx! {
+        div { class: "p-10 flex flex-row-reverse",
+            div { class: "bg-sky-600 basis-2/3", "1:ベイシス3分の1ィ" }
+            div { class: "basis-1/3", "2:ベイシス3分の1ィ" }
+            div { class: "basis-2/3", "3:ベイシス3分の2ィ" }
+            div { class: "basis-1/3", "4:ベイシス3分の1ィ" }
         }
     }
 }
@@ -27,6 +40,7 @@ fn App() -> Element {
 fn TailingMinoSolver() -> Element {
     let mut minos = use_signal(Vec::new);
     let mut board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
+    let mut solved_board = use_signal(|| Board::new(Shape::new(vec![vec![false; 9]; 9])));
     let make_mino = move |new_shape: Shape| {
         let current_len = minos().len();
         tracing::info!("Current number of minos: {}", current_len);
@@ -38,21 +52,30 @@ fn TailingMinoSolver() -> Element {
         tracing::info!("Clicked on board cell ({}, {})", x, y);
         board.write().shape.toggle(x, y);
     };
-    let tile_minos = move |_| {
+    let solve_tiling = move |_| {
         tracing::info!("Solve button clicked");
-        let solved: Option<Board> = board().tile_parallel(&minos());
-        if let Some(s) = solved {
-            *board.write() = s;
+        let answer: Option<Board> = board().tile_parallel(&minos());
+        if let Some(a) = answer {
+            *solved_board.write() = a;
         } else {
             tracing::info!("No solution found");
         }
     };
     rsx! {
         MinoMaker { minos: minos(), handle_push_button: make_mino }
-        BoardMaker { board: board(), handle_click: toggle_board_cell }
-        button {
-            onclick: tile_minos,
-            "Solve"
+        div { class: "flex flex-row",
+            div { class: "basis-1/2",
+                div { "Board Maker" }
+                BoardMaker { board: board(), handle_click: toggle_board_cell }
+                button {
+                    onclick: solve_tiling,
+                    "Solve"
+                }
+            }
+            div { class: "basis-1/2",
+                div { "Answer" }
+                BoardMaker { board: solved_board(), handle_click: |_| {} }
+            }
         }
     }
 }
@@ -61,7 +84,6 @@ fn TailingMinoSolver() -> Element {
 fn BoardMaker(board: Board, handle_click: EventHandler<(usize, usize)>) -> Element {
     tracing::info!("Rendering BoardMaker component");
     rsx! {
-        div { "Board Maker" }
         Lattice { color_shape: board.into(), cell_pixel: 20, handle_click }
     }
 }
