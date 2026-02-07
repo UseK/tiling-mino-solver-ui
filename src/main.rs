@@ -17,7 +17,7 @@ fn App() -> Element {
             href: asset!("/assets/tailwind.css"),
         }
         div {
-            class: "p-5 bg-sky-700",
+            class: "p-5 bg-gray-600",
             FlexBoxTest {  }
             TailingMinoSolver { }
         }
@@ -27,8 +27,8 @@ fn App() -> Element {
 #[component]
 fn FlexBoxTest() -> Element {
     rsx! {
-        div { class: "p-10 flex flex-row-reverse",
-            div { class: "bg-sky-600 basis-2/3", "1:ベイシス3分の1ィ" }
+        div { class: "p-10 flex",
+            div { class: "bg-sky-600 basis-1/3", "1:ベイシス3分の1ィ" }
             div { class: "basis-1/3", "2:ベイシス3分の1ィ" }
             div { class: "basis-2/3", "3:ベイシス3分の2ィ" }
             div { class: "basis-1/3", "4:ベイシス3分の1ィ" }
@@ -82,6 +82,36 @@ fn TailingMinoSolver() -> Element {
 }
 
 #[component]
+fn PlusButton(handle_click: EventHandler<MouseEvent>) -> Element {
+    rsx! {
+        button {
+            class: "rounded-full size-6 bg-blue-500 hover:bg-blue-700 text-white font-bold flex items-center justify-center",
+            onclick: move |evt| handle_click.call(evt),
+            svg {
+                class: "w-4 h-4",
+                view_box: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                stroke_width: "3",
+                stroke_linecap: "round",
+                line {
+                    x1: "12",
+                    y1: "5",
+                    x2: "12",
+                    y2: "19",
+                }
+                line {
+                    x1: "5",
+                    y1: "12",
+                    x2: "19",
+                    y2: "12",
+                }
+            }
+        }
+    }
+}
+
+#[component]
 fn BoardMaker(board: Board, handle_click: EventHandler<(usize, usize)>) -> Element {
     tracing::info!("Rendering BoardMaker component");
     rsx! {
@@ -104,14 +134,15 @@ fn MinoMaker(minos: Vec<Mino>, handle_push_button: EventHandler<Shape>) -> Eleme
             cell_pixel: 100,
             handle_click: handle_click_with_toggle,
         }
-        button { onclick: move |_| handle_push_button.call(new_shape()), "Make Mino" }
-        for mino in minos {
-            div { "new" }
-            Lattice {
-                color_shape: mino.into(),
-                cell_pixel: 50,
-                handle_click: |_| {},
+        div { class : "flex flex-row flex-wrap",
+            for mino in minos {
+                Lattice {
+                    color_shape: mino.into(),
+                    cell_pixel: 50,
+                    handle_click: |_| {},
+                }
             }
+            PlusButton { handle_click: move |_| handle_push_button.call(new_shape()) }
         }
     }
 }
@@ -130,7 +161,10 @@ enum Color {
     Gray = 0x808080,
 }
 
-const CHAR_PALETTE: [char; 6] = ['a', 'b', 'c', 'd', 'e', 'f'];
+const CHAR_PALETTE: [char; 26] = [
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+    't', 'u', 'v', 'w', 'x', 'y', 'z',
+];
 
 impl Color {
     fn tailwind_bg(&self) -> &'static str {
@@ -271,9 +305,10 @@ mod tests {
     use dioxus::prelude::*;
     #[test]
     fn test() {
+        let w = "world";
         assert_rsx_eq(
             rsx! {
-                div { "Hello world" }
+                div { "Hello {w}" }
                 div { "Hello world" }
             },
             rsx! {

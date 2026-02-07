@@ -12,13 +12,15 @@
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-cyan-500: oklch(71.5% 0.143 215.221);
     --color-sky-600: oklch(58.8% 0.158 241.966);
-    --color-sky-700: oklch(50% 0.134 242.749);
     --color-blue-500: oklch(62.3% 0.214 259.815);
+    --color-blue-700: oklch(48.8% 0.243 264.376);
     --color-purple-500: oklch(62.7% 0.265 303.9);
     --color-gray-500: oklch(55.1% 0.027 264.364);
+    --color-gray-600: oklch(44.6% 0.03 256.802);
     --color-black: #000;
     --color-white: #fff;
     --spacing: 0.25rem;
+    --font-weight-bold: 700;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
   }
@@ -184,6 +186,16 @@
   .flex {
     display: flex;
   }
+  .size-6 {
+    width: calc(var(--spacing) * 6);
+    height: calc(var(--spacing) * 6);
+  }
+  .h-4 {
+    height: calc(var(--spacing) * 4);
+  }
+  .w-4 {
+    width: calc(var(--spacing) * 4);
+  }
   .basis-1\/2 {
     flex-basis: calc(1/2 * 100%);
   }
@@ -199,8 +211,17 @@
   .flex-row {
     flex-direction: row;
   }
-  .flex-row-reverse {
-    flex-direction: row-reverse;
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
   }
   .border {
     border-style: var(--tw-border-style);
@@ -218,6 +239,9 @@
   .bg-gray-500 {
     background-color: var(--color-gray-500);
   }
+  .bg-gray-600 {
+    background-color: var(--color-gray-600);
+  }
   .bg-green-500 {
     background-color: var(--color-green-500);
   }
@@ -230,9 +254,6 @@
   .bg-sky-600 {
     background-color: var(--color-sky-600);
   }
-  .bg-sky-700 {
-    background-color: var(--color-sky-700);
-  }
   .bg-white {
     background-color: var(--color-white);
   }
@@ -244,6 +265,20 @@
   }
   .p-10 {
     padding: calc(var(--spacing) * 10);
+  }
+  .font-bold {
+    --tw-font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold);
+  }
+  .text-white {
+    color: var(--color-white);
+  }
+  .hover\:bg-blue-700 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-blue-700);
+      }
+    }
   }
 }
 @property --tw-rotate-x {
@@ -271,6 +306,10 @@
   inherits: false;
   initial-value: solid;
 }
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
@@ -280,6 +319,7 @@
       --tw-skew-x: initial;
       --tw-skew-y: initial;
       --tw-border-style: solid;
+      --tw-font-weight: initial;
     }
   }
 }
