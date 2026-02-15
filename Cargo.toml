@@ -1,5 +1,5 @@
 [package]
-name = "hot_dog"
+name = "tiling-mino-solver-ui"
 version = "0.1.0"
 authors = ["UseK <use.k.james@gmail.com>"]
 edition = "2024"
